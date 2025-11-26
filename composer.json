@@ -1,0 +1,25 @@
+{
+  "name": "giantpeach/wp-modern-images",
+  "description": "Improved developer experience for working with WordPress media library images",
+  "type": "wordpress-plugin",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Giant Peach",
+      "email": "dev@giantpeach.agency"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "composer/installers": "^1.0 || ^2.0",
+    "league/glide": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Giantpeach\\WpModernImages\\": "src/"
+    }
+  },
+  "extra": {
+    "installer-name": "wp-modern-images"
+  }
+}
