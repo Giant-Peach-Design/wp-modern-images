@@ -65,7 +65,7 @@ class Cache
 
     public function getFileUrl(string $relativePath): string
     {
-        return trailingslashit($this->cacheUrl) . ltrim($relativePath, '/');
+        return home_url('/img/' . ltrim($relativePath, '/'));
     }
 
     public function getFilePath(string $relativePath): string

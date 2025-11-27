@@ -28,6 +28,10 @@ if (file_exists($autoloader)) {
     require_once $autoloader;
 }
 
+// Activation/deactivation hooks
+register_activation_hook(__FILE__, ['Giantpeach\WpModernImages\Plugin', 'activate']);
+register_deactivation_hook(__FILE__, ['Giantpeach\WpModernImages\Plugin', 'deactivate']);
+
 // Load plugin
 add_action('plugins_loaded', function () {
     \Giantpeach\WpModernImages\Plugin::init();

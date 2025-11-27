@@ -18,10 +18,57 @@ class Plugin
     private function __construct()
     {
         $this->loadHelpers();
+        $this->registerHooks();
     }
 
     private function loadHelpers(): void
     {
         require_once WP_MODERN_IMAGES_PATH . 'src/helpers.php';
+    }
+
+    private function registerHooks(): void
+    {
+        add_action('init', [$this, 'addRewriteRules']);
+        add_filter('query_vars', [$this, 'addQueryVars']);
+        add_action('template_redirect', [$this, 'handleImageRequest']);
+    }
+
+    public function addRewriteRules(): void
+    {
+        add_rewrite_rule(
+            '^img/(.+)$',
+            'index.php?gp_image_path=$matches[1]',
+            'top'
+        );
+    }
+
+    public function addQueryVars(array $vars): array
+    {
+        $vars[] = 'gp_image_path';
+        return $vars;
+    }
+
+    public function handleImageRequest(): void
+    {
+        $imagePath = get_query_var('gp_image_path');
+
+        if (!$imagePath) {
+            return;
+        }
+
+        $server = new ImageServer();
+        $server->serve($imagePath);
+    }
+
+    public static function activate(): void
+    {
+        $instance = self::init();
+        $instance->addRewriteRules();
+        flush_rewrite_rules();
+    }
+
+    public static function deactivate(): void
+    {
+        flush_rewrite_rules();
     }
 }
