@@ -32,6 +32,7 @@ class Plugin
         add_filter('query_vars', [$this, 'addQueryVars']);
         add_action('template_redirect', [$this, 'handleImageRequest']);
         add_filter('redirect_canonical', [$this, 'preventTrailingSlashRedirect'], 10, 2);
+        add_action('acorn/init', [$this, 'registerBladeDirective']);
     }
 
     public function addRewriteRules(): void
@@ -68,6 +69,15 @@ class Plugin
         }
 
         return $redirect_url;
+    }
+
+    public function registerBladeDirective(): void
+    {
+        \Roots\Acorn\Application::getInstance()
+            ->make('blade.compiler')
+            ->directive('gpImage', function ($expression) {
+                return "<?php echo gp_image({$expression}); ?>";
+            });
     }
 
     public static function activate(): void

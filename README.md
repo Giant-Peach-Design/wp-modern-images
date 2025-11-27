@@ -125,6 +125,21 @@ echo gp_image(123, [
 </picture>
 ```
 
+## Blade Directive (Sage/Acorn)
+
+If you're using Sage with Acorn, a `@gpImage` directive is automatically registered:
+
+```blade
+@gpImage(123, [
+    0 => ['w' => 400, 'h' => 300],
+    768 => ['w' => 800, 'h' => 600],
+    1024 => ['w' => 1200, 'h' => 800],
+])
+
+{{-- With options --}}
+@gpImage($image_id, $sizes, ['picture_class' => 'hero', 'img_class' => 'hero__img'])
+```
+
 ## Configuration
 
 ### Cache Directory
