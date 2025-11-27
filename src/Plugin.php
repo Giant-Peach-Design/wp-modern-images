@@ -31,6 +31,7 @@ class Plugin
         add_action('init', [$this, 'addRewriteRules']);
         add_filter('query_vars', [$this, 'addQueryVars']);
         add_action('template_redirect', [$this, 'handleImageRequest']);
+        add_filter('redirect_canonical', [$this, 'preventTrailingSlashRedirect'], 10, 2);
     }
 
     public function addRewriteRules(): void
@@ -58,6 +59,15 @@ class Plugin
 
         $server = new ImageServer();
         $server->serve($imagePath);
+    }
+
+    public function preventTrailingSlashRedirect($redirect_url, $requested_url)
+    {
+        if (get_query_var('gp_image_path')) {
+            return false;
+        }
+
+        return $redirect_url;
     }
 
     public static function activate(): void
