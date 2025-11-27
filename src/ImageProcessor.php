@@ -45,7 +45,7 @@ class ImageProcessor
         return $this->server;
     }
 
-    public function process(int $attachmentId, int $width, int $height, string $fit, string $format): ?string
+    public function process(int $attachmentId, array $params, string $format): ?string
     {
         $filePath = get_attached_file($attachmentId);
 
@@ -55,19 +55,16 @@ class ImageProcessor
 
         $relativePath = str_replace($this->uploadsPath . '/', '', $filePath);
 
-        $params = [
-            'w' => $width,
-            'h' => $height,
-            'fit' => $this->mapFitMode($fit),
+        $glideParams = [
+            'w' => $params['w'],
+            'h' => $params['h'],
+            'fit' => $this->mapFitMode($params['fit'] ?? 'cover'),
             'fm' => $format,
+            'q' => $params['q'] ?? 80,
         ];
 
-        if ($format === 'webp') {
-            $params['q'] = 80;
-        }
-
         try {
-            $cachedPath = $this->getServer()->makeImage($relativePath, $params);
+            $cachedPath = $this->getServer()->makeImage($relativePath, $glideParams);
             return $this->cache->getFileUrl($cachedPath);
         } catch (\Exception $e) {
             error_log('WP Modern Images: Failed to process image - ' . $e->getMessage());

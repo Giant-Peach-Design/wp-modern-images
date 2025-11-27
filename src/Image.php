@@ -17,6 +17,13 @@ class Image
         'loading' => 'lazy',
     ];
 
+    private array $defaultSizeConfig = [
+        'w' => 0,
+        'h' => 0,
+        'fit' => 'cover',
+        'q' => 80,
+    ];
+
     public function __construct(int $imageId, array $sizes, array $options = [])
     {
         $this->imageId = $imageId;
@@ -59,18 +66,18 @@ class Image
         krsort($sortedSizes);
 
         foreach ($sortedSizes as $breakpoint => $sizeConfig) {
-            $imageId = $this->getImageIdForSize($sizeConfig);
-            [$width, $height, $fit] = $this->parseSizeConfig($sizeConfig);
+            $config = array_merge($this->defaultSizeConfig, $sizeConfig);
+            $imageId = $config['image_id'] ?? $this->imageId;
 
             $originalFormat = $this->processor->getOriginalFormat($imageId);
 
-            $webpSource = $this->generateSource($imageId, $width, $height, $fit, 'webp', $breakpoint);
+            $webpSource = $this->generateSource($imageId, $config, 'webp', $breakpoint);
             if ($webpSource) {
                 $sources[] = $webpSource;
             }
 
             if ($originalFormat !== 'webp') {
-                $fallbackSource = $this->generateSource($imageId, $width, $height, $fit, $originalFormat, $breakpoint);
+                $fallbackSource = $this->generateSource($imageId, $config, $originalFormat, $breakpoint);
                 if ($fallbackSource) {
                     $sources[] = $fallbackSource;
                 }
@@ -80,9 +87,9 @@ class Image
         return $sources;
     }
 
-    private function generateSource(int $imageId, int $width, int $height, string $fit, string $format, int $breakpoint): ?string
+    private function generateSource(int $imageId, array $config, string $format, int $breakpoint): ?string
     {
-        $url1x = $this->processor->process($imageId, $width, $height, $fit, $format);
+        $url1x = $this->processor->process($imageId, $config, $format);
         if (!$url1x) {
             return null;
         }
@@ -90,7 +97,11 @@ class Image
         $srcset = esc_url($url1x) . ' 1x';
 
         if ($this->options['retina']) {
-            $url2x = $this->processor->process($imageId, $width * 2, $height * 2, $fit, $format);
+            $retinaConfig = array_merge($config, [
+                'w' => $config['w'] * 2,
+                'h' => $config['h'] * 2,
+            ]);
+            $url2x = $this->processor->process($imageId, $retinaConfig, $format);
             if ($url2x) {
                 $srcset .= ', ' . esc_url($url2x) . ' 2x';
             }
@@ -111,13 +122,12 @@ class Image
     {
         $smallestBreakpoint = min(array_keys($this->sizes));
         $sizeConfig = $this->sizes[$smallestBreakpoint];
-
-        $imageId = $this->getImageIdForSize($sizeConfig);
-        [$width, $height, $fit] = $this->parseSizeConfig($sizeConfig);
+        $config = array_merge($this->defaultSizeConfig, $sizeConfig);
+        $imageId = $config['image_id'] ?? $this->imageId;
 
         $originalFormat = $this->processor->getOriginalFormat($imageId);
 
-        $url1x = $this->processor->process($imageId, $width, $height, $fit, $originalFormat);
+        $url1x = $this->processor->process($imageId, $config, $originalFormat);
         if (!$url1x) {
             return '';
         }
@@ -125,7 +135,11 @@ class Image
         $srcset = esc_url($url1x) . ' 1x';
 
         if ($this->options['retina']) {
-            $url2x = $this->processor->process($imageId, $width * 2, $height * 2, $fit, $originalFormat);
+            $retinaConfig = array_merge($config, [
+                'w' => $config['w'] * 2,
+                'h' => $config['h'] * 2,
+            ]);
+            $url2x = $this->processor->process($imageId, $retinaConfig, $originalFormat);
             if ($url2x) {
                 $srcset .= ', ' . esc_url($url2x) . ' 2x';
             }
@@ -143,19 +157,5 @@ class Image
             $imgClass,
             $loading
         );
-    }
-
-    private function getImageIdForSize(array $sizeConfig): int
-    {
-        return isset($sizeConfig[3]) ? (int) $sizeConfig[3] : $this->imageId;
-    }
-
-    private function parseSizeConfig(array $sizeConfig): array
-    {
-        return [
-            (int) ($sizeConfig[0] ?? 0),
-            (int) ($sizeConfig[1] ?? 0),
-            (string) ($sizeConfig[2] ?? 'cover'),
-        ];
     }
 }
