@@ -127,7 +127,15 @@ echo gp_image(123, [
 
 ## Blade Directive (Sage/Acorn)
 
-If you're using Sage with Acorn, a `@gpImage` directive is automatically registered:
+If you're using Sage with Acorn, add this to your `app/Providers/ThemeServiceProvider.php` in the `boot()` method:
+
+```php
+\Illuminate\Support\Facades\Blade::directive('gpImage', function ($expression) {
+    return "<?php echo gp_image({$expression}); ?>";
+});
+```
+
+Then use in your Blade templates:
 
 ```blade
 @gpImage(123, [
