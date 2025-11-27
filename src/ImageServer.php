@@ -45,18 +45,23 @@ class ImageServer
 
     private function getMimeType(string $filePath): string
     {
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($filePath);
 
-        $mimeTypes = [
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'gif' => 'image/gif',
-            'webp' => 'image/webp',
-            'avif' => 'image/avif',
+        // Whitelist valid image types
+        $validTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/avif',
         ];
 
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
+        if (in_array($mimeType, $validTypes, true)) {
+            return $mimeType;
+        }
+
+        return 'application/octet-stream';
     }
 
     private function isNotModified(string $etag, int $lastModified): bool
