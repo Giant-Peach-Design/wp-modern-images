@@ -32,7 +32,7 @@ class Plugin
         add_filter('query_vars', [$this, 'addQueryVars']);
         add_action('template_redirect', [$this, 'handleImageRequest']);
         add_filter('redirect_canonical', [$this, 'preventTrailingSlashRedirect'], 10, 2);
-        add_filter('acorn/view/directives', [$this, 'registerBladeDirective']);
+        add_action('acorn/bootloader/booted', [$this, 'registerBladeDirective']);
     }
 
     public function addRewriteRules(): void
@@ -71,13 +71,12 @@ class Plugin
         return $redirect_url;
     }
 
-    public function registerBladeDirective(array $directives): array
+    public function registerBladeDirective($app): void
     {
-        $directives['gpImage'] = function ($expression) {
-            return "<?php echo gp_image({$expression}); ?>";
-        };
-
-        return $directives;
+        $app->make('blade.compiler')
+            ->directive('gpImage', function ($expression) {
+                return "<?php echo gp_image({$expression}); ?>";
+            });
     }
 
     public static function activate(): void
