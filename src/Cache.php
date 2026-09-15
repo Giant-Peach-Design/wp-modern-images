@@ -68,9 +68,33 @@ class Cache
         return home_url('/img/' . ltrim($relativePath, '/'));
     }
 
+    /**
+     * Resolve a cache-relative path to an absolute one.
+     *
+     * Returns an empty string for anything trying to climb out of the cache
+     * directory; callers must treat that as "not found". The argument arrives
+     * straight from the ^img/(.+)$ rewrite and is therefore attacker
+     * controlled, so this cannot assume it looks like a generated cache key.
+     */
     public function getFilePath(string $relativePath): string
     {
-        return trailingslashit($this->cachePath) . ltrim($relativePath, '/');
+        // A null byte truncates the string inside the filesystem call, so any
+        // check on the tail of the path can be sidestepped with one.
+        if (strpos($relativePath, "\0") !== false) {
+            return '';
+        }
+
+        // Backslashes separate path segments too on some platforms, so fold
+        // them in before looking for '..' rather than after.
+        $normalised = str_replace('\\', '/', $relativePath);
+
+        foreach (explode('/', $normalised) as $segment) {
+            if ($segment === '..') {
+                return '';
+            }
+        }
+
+        return trailingslashit($this->cachePath) . ltrim($normalised, '/');
     }
 
     public function fileExists(string $relativePath): bool

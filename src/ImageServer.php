@@ -15,12 +15,42 @@ class ImageServer
     {
         $filePath = $this->cache->getFilePath($imagePath);
 
-        if (!file_exists($filePath)) {
+        if ($filePath === '' || !file_exists($filePath)) {
             status_header(404);
             exit;
         }
 
+        // Rejecting '..' in the requested path is not enough on its own: a
+        // symlink inside the cache directory still resolves outside it, and no
+        // amount of string inspection catches that. Resolve the path for real
+        // and confirm where it landed before reading a byte of it.
+        $realPath = realpath($filePath);
+        $cacheRoot = realpath($this->cache->getCachePath());
+
+        if ($realPath === false || $cacheRoot === false) {
+            status_header(404);
+            exit;
+        }
+
+        $cacheRoot = rtrim($cacheRoot, '/') . '/';
+
+        if (strpos($realPath, $cacheRoot) !== 0) {
+            status_header(404);
+            exit;
+        }
+
+        $filePath = $realPath;
+
+        // Only ever serve the image types this plugin generates. Previously an
+        // unrecognised type fell through to application/octet-stream and was
+        // still sent, which turned any readable file into a download.
         $mimeType = $this->getMimeType($filePath);
+
+        if ($mimeType === null) {
+            status_header(404);
+            exit;
+        }
+
         $fileSize = filesize($filePath);
         $lastModified = filemtime($filePath);
         $etag = md5($filePath . $lastModified);
@@ -43,7 +73,10 @@ class ImageServer
         exit;
     }
 
-    private function getMimeType(string $filePath): string
+    /**
+     * The file's MIME type, or null when it is not an image this plugin serves.
+     */
+    private function getMimeType(string $filePath): ?string
     {
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($filePath);
@@ -61,7 +94,7 @@ class ImageServer
             return $mimeType;
         }
 
-        return 'application/octet-stream';
+        return null;
     }
 
     private function isNotModified(string $etag, int $lastModified): bool
