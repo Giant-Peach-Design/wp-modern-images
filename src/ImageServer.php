@@ -32,7 +32,10 @@ class ImageServer
             exit;
         }
 
-        $cacheRoot = rtrim($cacheRoot, '/') . '/';
+        // realpath() returns backslash-separated paths on Windows, so fold
+        // both sides to forward slashes before comparing prefixes.
+        $realPath = str_replace('\\', '/', $realPath);
+        $cacheRoot = rtrim(str_replace('\\', '/', $cacheRoot), '/') . '/';
 
         if (strpos($realPath, $cacheRoot) !== 0) {
             status_header(404);
